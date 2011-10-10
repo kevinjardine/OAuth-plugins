@@ -24,7 +24,7 @@ require_once "$plugin_path/signature_method/OAuthSignatureMethod_RSA_SHA1.php";
 // handle potential redirects
 // need to do it this way because each redirect needs to be re-signed
 
-function oauth_handle_request_with_redirects($url,$user_guid,$store,$server) {
+function oauth_handle_request_with_redirects($url,$user_guid,$store,$server,$reauthorize_forward) {
 	for ($i=0; $i<5;$i++) {
 		$request = new OAuthRequester($url, 'GET');
 		try {
@@ -40,7 +40,7 @@ function oauth_handle_request_with_redirects($url,$user_guid,$store,$server) {
 			// for another one
 			$secrets_array = $store->getServerTokenSecrets($server->consumer_key, '', 'access', $user_guid);
 			$store->deleteServerToken($server->consumer_key,$secrets_array['token'],$user_guid);
-			forward('gcal_sync/test');
+			forward($reauthorize_forward);
 			exit;
 		}
 	}

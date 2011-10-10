@@ -11,7 +11,6 @@ $server_uri = elgg_get_plugin_setting('google_server_uri','gcal_sync');
 $store = OAuthStore::instance("Elgg");
 $store->setCurrentServerURI($server_uri);
 $server = $store->getServerForUri($server_uri,$user_guid);
-print $server->server_uri.",".$server->consumer_key;
 
 $secrets_array = $store->getServerTokenSecrets($server->consumer_key, '', 'access', $user_guid);
 

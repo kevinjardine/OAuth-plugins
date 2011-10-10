@@ -24,7 +24,7 @@ require_once "$plugin_path/signature_method/OAuthSignatureMethod_RSA_SHA1.php";
 // handle potential redirects
 // need to do it this way because each redirect needs to be re-signed
 
-function oauth_handle_request_with_redirects($url,$user_guid,$store,$server,$reauthorize_forward='') {
+function oauth_handle_request_with_redirects($url,$user_guid,$store,$server,$reauthorize_forward='',$delete_on_error=FALSE) {
 	for ($i=0; $i<5;$i++) {
 		$request = new OAuthRequester($url, 'GET');
 		try {
@@ -35,11 +35,14 @@ function oauth_handle_request_with_redirects($url,$user_guid,$store,$server,$rea
 				break;
 			}
 		} catch(OAuthException2 $e) {
+			error_log('error in oauth_handle_request_with_redirects: '.print_r($e,TRUE));
 			// so far as I can see, if an exception is triggered at this stage, 
 			// the user must have revoked the access token, so delete the one we have and ask 
 			// for another one
-			$secrets_array = $store->getServerTokenSecrets($server->consumer_key, '', 'access', $user_guid);
-			$store->deleteServerToken($server->consumer_key,$secrets_array['token'],$user_guid);
+			if ($delete_on_error) {
+				$secrets_array = $store->getServerTokenSecrets($server->consumer_key, '', 'access', $user_guid);
+				$store->deleteServerToken($server->consumer_key,$secrets_array['token'],$user_guid);
+			}
 			if($reauthorize_forward) {
 				forward($reauthorize_forward);
 				exit;
@@ -55,22 +58,27 @@ function oauth_handle_request_with_redirects($url,$user_guid,$store,$server,$rea
 // handle potential redirects
 // need to do it this way because each redirect needs to be re-signed
 
-function oauth_handle_post_with_redirects($url,$params,$body,$user_guid,$store,$server,$reauthorize_forward='') {
+function oauth_handle_post_with_redirects($url,$params,$body,$user_guid,$store,$server,$reauthorize_forward='',$delete_on_error=FALSE) {
 	for ($i=0; $i<5;$i++) {
 		$request = new OAuthRequester($url, 'POST', $params, $body);
 		try {
-			$result = $request->doRequest($user_guid);
+			// set the content type
+			$curl_options = array(CURLOPT_HTTPHEADER => array("Content-Type: application/atom+xml"));
+			$result = $request->doRequest($user_guid,$curl_options);
 			if ($result['code'] == 302) {
 				$url = $result['headers']['location'];
 			} else {
 				break;
 			}
 		} catch(OAuthException2 $e) {
+			error_log('error in oauth_handle_post_with_redirects: '.print_r($e,TRUE));
 			// so far as I can see, if an exception is triggered at this stage, 
 			// the user must have revoked the access token, so delete the one we have and 
 			// optionally ask for another one
-			$secrets_array = $store->getServerTokenSecrets($server->consumer_key, '', 'access', $user_guid);
-			$store->deleteServerToken($server->consumer_key,$secrets_array['token'],$user_guid);
+			if ($delete_on_error) {
+				$secrets_array = $store->getServerTokenSecrets($server->consumer_key, '', 'access', $user_guid);
+				$store->deleteServerToken($server->consumer_key,$secrets_array['token'],$user_guid);
+			}
 			if($reauthorize_forward) {
 				forward($reauthorize_forward);
 				exit;

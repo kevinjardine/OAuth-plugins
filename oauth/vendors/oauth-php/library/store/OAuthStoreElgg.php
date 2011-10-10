@@ -248,6 +248,7 @@ class OAuthStoreElgg extends OAuthStoreAbstract
 			$server_obj->request_token_uri = $server['request_token_uri'];
 			$server_obj->authorize_uri = $server['authorize_uri'];
 			$server_obj->access_token_uri = $server['access_token_uri'];
+			$server_obj->revoke_access_uri = $server['revoke_access_uri'];
 			$server_obj->save();
 		}		
 	}
